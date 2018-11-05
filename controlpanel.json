@@ -1,0 +1,14 @@
+{
+  "bigevents":{
+    "active": true,
+    "min_charge": -100, 
+    "event_time": 10,
+    "median_window": 1000.0
+  },
+  "dropoutfixer":{
+    "active": false
+  },
+  "noisestripper":{
+    "active": true
+  }
+}
