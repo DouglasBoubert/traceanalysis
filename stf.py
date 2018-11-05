@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 print("Reading in file")
 #targetfile = '/Users/douglasboubert/Documents/Science/AlisonNeuro/Data/180502_003.1.edr'
 #targetfile = '/Users/douglasboubert/Documents/Science/AlisonNeuro/Data/180904_006.1[LP=5327Hz RD=20].edr'
-#targetfile = '/Users/douglasboubert/Documents/Science/AlisonNeuro/Data/180904_006.1[LP=5327Hz RD=20].edr'
-targetfile = '/Users/douglasboubert/Documents/Science/AlisonNeuro/Data/180927_001[LP=5327Hz RD=20]40-100s.edr'
+targetfile = '/Users/douglasboubert/Documents/Science/AlisonNeuro/Data/180904_006.1[LP=5327Hz RD=20].edr'
+#targetfile = '/Users/douglasboubert/Documents/Science/AlisonNeuro/Data/180927_001[LP=5327Hz RD=20]40-100s.edr'
 #targetfile = '/Users/douglasboubert/Documents/Science/AlisonNeuro/Data/180919_005.1[LP=5327Hz RD=20].edr'
 
 reader = WinEdrIO(filename=targetfile)

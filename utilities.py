@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy import optimize
 import json
+from math import exp
 
 # Load in controls
 with open('controlpanel.json') as f:
@@ -116,13 +117,14 @@ def _triexponential_peak(PARAMS=(1.0,1.0,1.0,0.5)):
     def _G2(x):
         return G2_A*exp(-x/RISE1)+G2_B*exp(-x/RISE2)
 
-    root = optimize.newton(_G0, 1.0, fprime=_G1,fprime2=_G2)
+    root = optimize.newton(_G0, _biexponential_peak(PARAMS=[RISE2,DECAY]), fprime=_G1,fprime2=_G2,maxiter=1000)
     return root
 
 def _triexponential(T,PARAMS=(1.0,2.0,1.0,0.5),NORMED=True):
     RISE1, RISE2, DECAY, F = PARAMS[0], PARAMS[0]*PARAMS[1], PARAMS[2], PARAMS[3]
     retarray = np.zeros(T.shape[0])
-    retarray = (1.0-F*np.exp(-T/RISE1)-(1.0-F)*np.exp(-T/RISE2))*(np.exp(-T/DECAY))
+    postime = T>0.
+    retarray[postime] = (1.0-F*np.exp(-T[postime]/RISE1)-(1.0-F)*np.exp(-T[postime]/RISE2))*(np.exp(-T[postime]/DECAY))
     if NORMED == True:
         PEAK = _triexponential_peak(PARAMS)
         NORM = _triexponential(np.array([PEAK]),PARAMS,NORMED=False)[0]
@@ -142,7 +144,7 @@ def _triexponential_params_names():
     return ['rise','eta','decay','f']
 
 def _triexponential_params_ranges():
-    return [(1e-10,1e5),(1.0,1e10),(1e-1,1e2),(0.0,1.0)]
+    return [(1e-10,1e3),(1.0,1e2),(1e-1,1e1),(0.001,0.999)]
 
 def _triexponential_params_defaults():
     return [_control['triexponential_params_defaults'][k] for k in _triexponential_params_names()]

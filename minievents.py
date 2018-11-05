@@ -127,16 +127,19 @@ class MiniEventHandler:
         # Gather useful quantities
         _data_scale = np.abs(_data.max()-_data.min())
         _range_start_t = [2.0*_default_peak_time,_default_peak_time]
-        _weights= np.exp(-((_time[:,np.newaxis]-_time[_peaks])**2.0/(2.0*(5.0*_default_peak_time)**2.0))).sum(axis=1)
+        _weights= np.exp(-((_time[:,np.newaxis]-_time[_peaks])**2.0/(2.0*(10.0*_default_peak_time)**2.0))).sum(axis=1)
         
         #_PEAKS = [_p+_mean_start_index-_first_peak for _p in _peaks] # Calculate where the peaks are in the new system
 
         def _mod_template(T,X):
             START_T, SCALE, _PARAMS  = X[0], X[1], X[2:]
-            return SCALE * self._template(T-START_T,_PARAMS)
+            try:
+                return SCALE * self._template(T-START_T,_PARAMS)
+            except RuntimeError:
+                print _PARAMS
 
         def _super_model(T,X,_NMODEL):
-            OFFSET, GRADIENT, EVENT_PARAMS = X[0], X[1], X[2:].reshape((_NMODEL,4))
+            OFFSET, GRADIENT, EVENT_PARAMS = X[0], X[1], X[2:].reshape((_NMODEL,_N_PARAMS))
             _model = OFFSET + GRADIENT*(T-T[_n_points]) # The base-line is centred on the first event
             for _model_index in range(_NMODEL):
                 _model += _mod_template(T,EVENT_PARAMS[_model_index])
@@ -151,6 +154,7 @@ class MiniEventHandler:
         _X0 = [MEDIAN,0.0]
         _bnds = [(_data.min(), _data.max()),(-1.0,1.0)]
         _N_MODEL = len(_peaks)
+        _N_PARAMS = 2+len(self._template_params_names())
         for _p, _h in zip(_peaks,_peaks_heights):
             _mean_start_t = _time[_p]-_default_peak_time
             _X0 += [_mean_start_t,-10.0] + self._template_params_defaults()
@@ -159,7 +163,7 @@ class MiniEventHandler:
         _res = optimize.minimize(_target,_X0,method='L-BFGS-B', tol=1e-10, bounds=_bnds, options=_opt, args=(_N_MODEL))
 
         # Pull out quantities of interest and check success
-        OFFSET, GRADIENT, EVENT_PARAMS = _res['x'][0], _res['x'][1], _res['x'][2:].reshape((_N_MODEL,4))
+        OFFSET, GRADIENT, EVENT_PARAMS = _res['x'][0], _res['x'][1], _res['x'][2:].reshape((_N_MODEL,_N_PARAMS))
         RCHI2 = np.mean(_weights*np.abs(_data-_super_model(_time,_res['x'],len(_peaks)))/NOISE)
         if _res['success'] == False and RCHI2 > 1.5:
             self.quit_bool = True
