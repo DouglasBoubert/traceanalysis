@@ -4,7 +4,12 @@
 import stf
 import numpy as np
 import pandas as pd
+from scipy import optimize
+import json
 
+# Load in controls
+with open('controlpanel.json') as f:
+    _control = json.load(f)['utilities']
 
 # Rolling functions
 def rolling(DATA,WINDOW=50,FUNC='MEDIAN',EDGE_METHOD='SHIFTING'):
@@ -68,3 +73,83 @@ def dt():
 # Splits an array into consecutive blocks
 def consecutive(DATA, STEPSIZE=1):
     return np.split(DATA, np.where(np.diff(DATA) != STEPSIZE)[0]+1)
+
+# Biexponential template and related functions
+def _biexponential(T,PARAMS=(1.0,1.0)):
+    RISE, DECAY = PARAMS
+    NORM = 1/((DECAY/(RISE+DECAY))*(RISE/(RISE+DECAY))**(RISE/DECAY))
+    retarray = np.zeros(T.shape[0])
+    postime = T>0.
+    retarray[postime] = NORM*(1.0-np.exp(-T[postime]/RISE))*np.exp(-T[postime]/DECAY)
+    return retarray
+
+def _biexponential_peak(PARAMS=(1.0,1.0)):
+    RISE, DECAY = PARAMS
+    return -RISE*np.log(RISE/(RISE+DECAY))
+
+def _biexponential_area(PARAMS=(1.0,1.0)):
+    RISE, DECAY = PARAMS
+    return DECAY/((RISE/(RISE+DECAY))**(RISE/DECAY))
+
+def _biexponential_params_names():
+    return ['rise','decay']
+
+def _biexponential_params_ranges():
+    return [(1e-10,1e5),(1e-1,1e2)]
+
+def _biexponential_params_defaults():
+    return [_control['biexponential_params_defaults'][k] for k in _biexponential_params_names()]
+
+# Triexponential template and related functions
+def _triexponential_peak(PARAMS=(1.0,1.0,1.0,0.5)):
+    RISE1, RISE2, DECAY, F = PARAMS[0], PARAMS[0]*PARAMS[1], PARAMS[2], PARAMS[3]
+    G0_A = F*(1.0+DECAY/RISE1)
+    G0_B = (1.0-F)*(1.0+DECAY/RISE2)
+    G1_A = -G0_A/RISE1
+    G1_B = -G0_B/RISE2
+    G2_A = -G1_A/RISE1
+    G2_B = -G1_B/RISE2
+    def _G0(x):
+        return -1.0+G0_A*exp(-x/RISE1)+G0_B*exp(-x/RISE2)
+    def _G1(x):
+        return G1_A*exp(-x/RISE1)+G1_B*exp(-x/RISE2)
+    def _G2(x):
+        return G2_A*exp(-x/RISE1)+G2_B*exp(-x/RISE2)
+
+    root = optimize.newton(_G0, 1.0, fprime=_G1,fprime2=_G2)
+    return root
+
+def _triexponential(T,PARAMS=(1.0,2.0,1.0,0.5),NORMED=True):
+    RISE1, RISE2, DECAY, F = PARAMS[0], PARAMS[0]*PARAMS[1], PARAMS[2], PARAMS[3]
+    retarray = np.zeros(T.shape[0])
+    retarray = (1.0-F*np.exp(-T/RISE1)-(1.0-F)*np.exp(-T/RISE2))*(np.exp(-T/DECAY))
+    if NORMED == True:
+        PEAK = _triexponential_peak(PARAMS)
+        NORM = _triexponential(np.array([PEAK]),PARAMS,NORMED=False)[0]
+        retarray /= NORM
+    return retarray
+
+def _triexponential_area(PARAMS=(1.0,2.0,1.0,0.5),NORMED=True):
+    RISE1, RISE2, DECAY, F = PARAMS[0], PARAMS[0]*PARAMS[1], PARAMS[2], PARAMS[3]
+    AREA = ((DECAY+(1.0-F)*RISE1+F*RISE2)/((1.0+RISE1/DECAY)*(1.0+RISE2/DECAY)))
+    if NORMED == True:
+        PEAK = _triexponential_peak(PARAMS)
+        NORM = _triexponential(np.array([PEAK]),PARAMS,NORMED=False)[0]
+        AREA /= NORM
+    return AREA
+
+def _triexponential_params_names():
+    return ['rise','eta','decay','f']
+
+def _triexponential_params_ranges():
+    return [(1e-10,1e5),(1.0,1e10),(1e-1,1e2),(0.0,1.0)]
+
+def _triexponential_params_defaults():
+    return [_control['triexponential_params_defaults'][k] for k in _triexponential_params_names()]
+
+# Returns the relevant functions for calculating a template
+def obtain_template(TEMPLATE_NAME='biexponential'):
+    if TEMPLATE_NAME == 'biexponential':
+        return _biexponential, _biexponential_peak, _biexponential_area, _biexponential_params_names, _biexponential_params_ranges, _biexponential_params_defaults
+    elif TEMPLATE_NAME == 'triexponential':
+        return _triexponential, _triexponential_peak, _triexponential_area, _triexponential_params_names, _triexponential_params_ranges, _triexponential_params_defaults

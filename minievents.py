@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 # Identify minievents
 class MiniEventHandler:
-    def __init__(self, trace, event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, default_rise = 1.0, default_decay = 1.0, mask=np.array([]),event_number_barrier=10):
+    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=10):
         # Initial sorting of data
         self.data = copy.copy(trace)
         self.dt = stf.get_sampling_interval()
@@ -26,28 +26,15 @@ class MiniEventHandler:
         self.bayes_bound = bayes_bound
         self.log_bayes_weight = np.log(bayes_weight)
         self.score_bound = score_bound
-        self.default_rise = default_rise
-        self.default_decay = default_decay
         inrange = np.where(mask<self.N)
         self.mask = mask[inrange].astype(np.int_)
         self.event_number_barrier = event_number_barrier
         self.data_list=[self.data]
         self.min_peak_current = min_peak_current
+        self.template_name = template_name
+        self._template, self._template_peak, self._template_area, self._template_params_names, self._template_params_ranges, self._template_params_defaults = utilities.obtain_template(TEMPLATE_NAME=self.template_name)
 
-    def _biexponential(self,T,RISE=1.0,DECAY=1.0):
-        NORM = 1/((DECAY/(RISE+DECAY))*(RISE/(RISE+DECAY))**(RISE/DECAY))
-        retarray = np.zeros(T.shape[0])
-        postime = T>0.
-        retarray[postime] = NORM*(1.0-np.exp(-T[postime]/RISE))*np.exp(-T[postime]/DECAY)
-        return retarray
-
-    def _biexponential_peak_time(self,RISE=1.0,DECAY=1.0):
-        return -RISE*np.log(RISE/(RISE+DECAY))
-
-    def _biexponential_area(self,RISE=1.0,DECAY=1.0):
-        return DECAY/((RISE/(RISE+DECAY))**(RISE/DECAY))
-
-    def _initial_classify_events(self, rise=1.0, decay=1.0):
+    def _initial_classify_events(self):
         # Calculate correlations
         _score = -np.fft.irfft(self.ft_data * self.ft_template.conjugate(),n=self.data.size)
         
@@ -100,7 +87,7 @@ class MiniEventHandler:
         _previous_peaks = []
         _first_peak = _mean_start_index+min(_peaks)-_n_points
         _last_peak = _mean_start_index+max(_peaks)-_n_points
-        _default_peak_time = self._biexponential_peak_time(RISE=self.default_rise,DECAY=self.default_decay)
+        _default_peak_time = self._template_peak(PARAMS=self._template_params_defaults())
         _left_extension = _n_points
         _right_extension = int(2.0*_n_points)
 
@@ -139,14 +126,14 @@ class MiniEventHandler:
 
         # Gather useful quantities
         _data_scale = np.abs(_data.max()-_data.min())
-        _range_start_t = [2.0*self.default_rise,self.default_rise]
-        _weights= np.exp(-((_time[:,np.newaxis]-_time[_peaks])**2.0/(2.0*(5.0*self.default_decay)**2.0))).sum(axis=1)
+        _range_start_t = [2.0*_default_peak_time,_default_peak_time]
+        _weights= np.exp(-((_time[:,np.newaxis]-_time[_peaks])**2.0/(2.0*(5.0*_default_peak_time)**2.0))).sum(axis=1)
         
         #_PEAKS = [_p+_mean_start_index-_first_peak for _p in _peaks] # Calculate where the peaks are in the new system
 
         def _mod_template(T,X):
-            SCALE, RISE, DECAY, START_T = X
-            return SCALE * self._biexponential(T-START_T,RISE=RISE,DECAY=DECAY)
+            START_T, SCALE, _PARAMS  = X[0], X[1], X[2:]
+            return SCALE * self._template(T-START_T,_PARAMS)
 
         def _super_model(T,X,_NMODEL):
             OFFSET, GRADIENT, EVENT_PARAMS = X[0], X[1], X[2:].reshape((_NMODEL,4))
@@ -166,8 +153,8 @@ class MiniEventHandler:
         _N_MODEL = len(_peaks)
         for _p, _h in zip(_peaks,_peaks_heights):
             _mean_start_t = _time[_p]-_default_peak_time
-            _X0 += [-10.0, self.default_rise, self.default_decay,_mean_start_t]
-            _bnds += [(1.5*_h, 0.5*_h), (1e-10, 1e5), (1e-1, 1e2), (_mean_start_t-_range_start_t[0], _mean_start_t+_range_start_t[1])]
+            _X0 += [_mean_start_t,-10.0] + self._template_params_defaults()
+            _bnds += [(_mean_start_t-_range_start_t[0], _mean_start_t+_range_start_t[1]),(1.5*_h, 0.5*_h)] + self._template_params_ranges()
         _opt = {'gtol':1e-10,'ftol':1e-10,'maxfun':100000}
         _res = optimize.minimize(_target,_X0,method='L-BFGS-B', tol=1e-10, bounds=_bnds, options=_opt, args=(_N_MODEL))
 
@@ -186,7 +173,7 @@ class MiniEventHandler:
         
         for _e_index in range(_N_MODEL):
             # Unpack event
-            SCALE, RISE, DECAY, START_T = EVENT_PARAMS[_e_index]
+            START_T, SCALE, PARAMS = EVENT_PARAMS[_e_index][0],EVENT_PARAMS[_e_index][1], EVENT_PARAMS[_e_index][2:]
 
             # Generate template fit and adjust running totals
             _START_T_offset = START_T%self.dt
@@ -210,8 +197,9 @@ class MiniEventHandler:
             self.raw_event_box['offset'].append(OFFSET)
             self.raw_event_box['gradient'].append(GRADIENT)
             self.raw_event_box['scale'].append(SCALE)
-            self.raw_event_box['rise'].append(RISE)
-            self.raw_event_box['decay'].append(DECAY)
+            self.raw_event_box['params'].append(PARAMS)
+            for key, ik in zip(self._template_params_names(), range(len(self._template_params_names()))):
+                self.raw_event_box[key].append(PARAMS[ik])
             self.raw_event_box['t'].append(START_T)
             self.raw_event_box['noise'].append(NOISE)
             self.raw_event_box['bayes_factor'].append(_peak_score)
@@ -229,17 +217,22 @@ class MiniEventHandler:
     def _post_process_event_box(self,current_threshold=1.0,charge_threshold=1.0,significance_threshold=1.0,rchi2_threshold=1.0):
         # Remove events below event threshold
         self.event_box = {'current_threshold':current_threshold,'significance_threshold':significance_threshold}
-        _raw_area = np.abs(self.raw_event_box['scale']*self._biexponential_area(RISE=self.raw_event_box['rise'],DECAY=self.raw_event_box['decay']))
-        _valid_events = np.where(((self.raw_event_box['scale'])<=-current_threshold)&(-(self.raw_event_box['scale'])/self.raw_event_box['noise']>significance_threshold)&(_raw_area>charge_threshold)&(self.raw_event_box['rchi2']<rchi2_threshold))
+        _raw_event_box_N = len(self.raw_event_box['scale'])
+        self.raw_event_box['peak_time'] = np.zeros(_raw_event_box_N)
+        self.raw_event_box['area'] = np.zeros(_raw_event_box_N)
+        for ie in range(_raw_event_box_N):
+            self.raw_event_box['peak_time'][ie] = self._template_peak(PARAMS = self.raw_event_box['params'][ie])
+            self.raw_event_box['area'][ie] = np.abs(self.raw_event_box['scale'][ie]*self._template_area(PARAMS = self.raw_event_box['params'][ie]))
+        _valid_events = np.where(((self.raw_event_box['scale'])<=-current_threshold)&(-(self.raw_event_box['scale'])/self.raw_event_box['noise']>significance_threshold)&(self.raw_event_box['area']>charge_threshold)&(self.raw_event_box['rchi2']<rchi2_threshold))
         for _k,_v in self.raw_event_box.items():
             self.event_box[_k] = _v[_valid_events]
         
         # Count number of events
         self.event_box['N'] = self.event_box['rise'].size
-        self.event_box['peak_time'] = self._biexponential_peak_time(RISE=self.event_box['rise'],DECAY=self.event_box['decay'])
+        
         self.event_box['max_time'] = self.event_box['t'] + self.event_box['peak_time']
         self.event_box['max_idx'] = (self.event_box['max_time']/self.dt).astype(np.int_)
-        self.event_box['area'] = np.abs(self.event_box['scale']*self._biexponential_area(RISE=self.event_box['rise'],DECAY=self.event_box['decay']))
+        
 
     def _show_mini_events(self):
         # Place markers
@@ -249,7 +242,7 @@ class MiniEventHandler:
 
         # Create results table
         _result_box = {}
-        _interesting = ['t','bayes_factor','scale','rise','decay']
+        _interesting = ['t','bayes_factor','scale']+self._template_params_names()
         for k in _interesting:
             _result_box[k] = list(self.event_box[k])
         self.result_box = _result_box
@@ -263,7 +256,7 @@ class MiniEventHandler:
 
     def run(self):
         # Create template
-        self.template = self._biexponential(self.t-self.t[0],RISE=self.default_rise,DECAY=self.default_decay)
+        self.template = self._template(self.t-self.t[0],PARAMS=self._template_params_defaults())
         self.template_short = self.template[:self.event_window*5]
         
         # Calculate background noise level
@@ -280,7 +273,7 @@ class MiniEventHandler:
         self.ft_template_short = utilities.fourier(self.template_short,self.dt)
         
         # Get score_of_events
-        self._initial_classify_events(rise=self.default_rise,decay=self.default_decay)
+        self._initial_classify_events()
         print "Completed initial classification of events"
 
         # Create copy of data residuals
@@ -293,7 +286,9 @@ class MiniEventHandler:
         self.last_event_index = 0
         self.quit_bool = False
         
-        self.raw_event_box = {'offset':[],'gradient':[],'scale':[],'rise':[],'decay':[],'t':[],'noise':[],'bayes_factor':[],'siblings':[],'rchi2':[]}
+        self.raw_event_box = {'params':[],'offset':[],'gradient':[],'scale':[],'t':[],'noise':[],'bayes_factor':[],'siblings':[],'rchi2':[]}
+        for key in self._template_params_names():
+                self.raw_event_box[key]=[]
         while loop_tracker == False:
             # Decide whether to continue
             index_of_event, significant_bool = self._decide_strategy()

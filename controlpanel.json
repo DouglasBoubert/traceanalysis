@@ -10,5 +10,17 @@
   },
   "noisestripper":{
     "active": true
+  },
+  "utilities":{
+    "biexponential_params_defaults":{
+      "rise": 1.0,
+      "decay": 1.0
+    },
+    "triexponential_params_defaults":{
+      "rise": 1.0,
+      "eta": 2.0,
+      "decay": 1.0,
+      "f": 0.5
+    }
   }
 }
