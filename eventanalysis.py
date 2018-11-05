@@ -20,7 +20,7 @@ class EventAnalysis:
         self.data = []
         self.data.append(trace)
         self.mask = np.array([])
-        with open('document.json') as f:
+        with open('controlpanel.json') as f:
             self.control = json.load(f)
 
     def _mask_update(self,_new_mask):
