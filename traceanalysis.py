@@ -53,7 +53,7 @@ class TraceAnalysis:
 
         # Identify and fit mini events
         if self.control['minievents']['active']:
-            MEH = minievents.MiniEventHandler(self.data[-1])
+            MEH = minievents.MiniEventHandler(self.data[-1], mask=self.mask, template_name = self.control['minievents']['template_name'], event_time = self.control['minievents']['event_time'], median_window = self.control['minievents']['median_window'], bayes_bound = self.control['minievents']['bayes_bound'], bayes_weight = self.control['minievents']['bayes_weight'], score_bound = self.control['minievents']['score_bound'], min_peak_current = self.control['minievents']['min_peak_current'], event_number_barrier = self.control['minievents']['event_number_barrier'], event_threshold = self.control['minievents']['event_threshold'])
             MEH.run()
             self.data.append(MEH.data_residual) 
         # Plot the results

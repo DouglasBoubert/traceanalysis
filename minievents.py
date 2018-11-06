@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 # Identify minievents
 class MiniEventHandler:
-    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=10):
+    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=10,event_threshold = {'current_threshold':0.0,'charge_threshold':0.0,'significance_threshold':0.0,'rchi2_threshold':np.inf}):
         # Initial sorting of data
         self.data = copy.copy(trace)
         self.dt = stf.get_sampling_interval()
@@ -31,6 +31,7 @@ class MiniEventHandler:
         self.event_number_barrier = event_number_barrier
         self.data_list=[self.data]
         self.min_peak_current = min_peak_current
+        self.event_threshold = event_threshold
         self.template_name = template_name
         self._template, self._template_peak, self._template_area, self._template_params_names, self._template_params_ranges, self._template_params_defaults = utilities.obtain_template(TEMPLATE_NAME=self.template_name)
 
@@ -218,16 +219,15 @@ class MiniEventHandler:
         for _k,_v in self.raw_event_box.items():
             self.raw_event_box[_k] = np.array(_v)            
                 
-    def _post_process_event_box(self,current_threshold=1.0,charge_threshold=1.0,significance_threshold=1.0,rchi2_threshold=1.0):
+    def _post_process_event_box(self,event_threshold):
         # Remove events below event threshold
-        self.event_box = {'current_threshold':current_threshold,'significance_threshold':significance_threshold}
         _raw_event_box_N = len(self.raw_event_box['scale'])
         self.raw_event_box['peak_time'] = np.zeros(_raw_event_box_N)
         self.raw_event_box['area'] = np.zeros(_raw_event_box_N)
         for ie in range(_raw_event_box_N):
             self.raw_event_box['peak_time'][ie] = self._template_peak(PARAMS = self.raw_event_box['params'][ie])
             self.raw_event_box['area'][ie] = np.abs(self.raw_event_box['scale'][ie]*self._template_area(PARAMS = self.raw_event_box['params'][ie]))
-        _valid_events = np.where(((self.raw_event_box['scale'])<=-current_threshold)&(-(self.raw_event_box['scale'])/self.raw_event_box['noise']>significance_threshold)&(self.raw_event_box['area']>charge_threshold)&(self.raw_event_box['rchi2']<rchi2_threshold))
+        _valid_events = np.where(((self.raw_event_box['scale'])<=-event_threshold['current_threshold'])&(-(self.raw_event_box['scale'])/self.raw_event_box['noise']>event_threshold['significance_threshold'])&(self.raw_event_box['area']>event_threshold['charge_threshold'])&(self.raw_event_box['rchi2']<event_threshold['rchi2_threshold']))
         for _k,_v in self.raw_event_box.items():
             self.event_box[_k] = _v[_valid_events]
         
@@ -323,7 +323,7 @@ class MiniEventHandler:
         self._process_event_box()
 
         # Post process event box
-        self._post_process_event_box(current_threshold=self.min_peak_current,charge_threshold=2.0,significance_threshold=2.0,rchi2_threshold=0.85)
+        self._post_process_event_box(self.event_threshold)
 
         # Show results
         self._show_mini_events()
