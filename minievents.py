@@ -32,6 +32,7 @@ class MiniEventHandler:
         self.data_list=[self.data]
         self.min_peak_current = min_peak_current
         self.event_threshold = event_threshold
+        self.print_bool = True
         self.template_name = template_name
         self._template, self._template_peak, self._template_area, self._template_params_names, self._template_params_ranges, self._template_params_defaults = utilities.obtain_template(TEMPLATE_NAME=self.template_name)
 
@@ -305,7 +306,12 @@ class MiniEventHandler:
                 loop_tracker = True
                 continue
             
-            print count_events,index_of_event,self.t[index_of_event]
+            if self.print_bool == True:
+                try:
+                    print count_events,index_of_event,self.t[index_of_event]
+                except IOError:
+                    # Weird error in StimFit...
+                    self.print_bool = False
             # Fit event
             self._fit_and_remove_event(index_of_event,_n_points=int(10.0/self.dt))
             #print t2-t1
