@@ -15,7 +15,7 @@ import minievents
 import json
 
 # Identify bigevents
-class EventAnalysis:
+class TraceAnalysis:
     def __init__(self, trace):
         # Initial sorting of data
         self.data = []
@@ -60,6 +60,6 @@ class EventAnalysis:
         stf.new_window_list(self.data)
 
 def __main__(trace=stf.get_trace()):
-    EA = EventAnalysis(trace=trace)
-    EA.run()
-    return EA
+    TA = TraceAnalysis(trace=trace)
+    TA.run()
+    return TA
