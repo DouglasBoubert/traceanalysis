@@ -228,6 +228,7 @@ class MiniEventHandler:
             self.raw_event_box['peak_time'][ie] = self._template_peak(PARAMS = self.raw_event_box['params'][ie])
             self.raw_event_box['area'][ie] = np.abs(self.raw_event_box['scale'][ie]*self._template_area(PARAMS = self.raw_event_box['params'][ie]))
         _valid_events = np.where(((self.raw_event_box['scale'])<=-event_threshold['current_threshold'])&(-(self.raw_event_box['scale'])/self.raw_event_box['noise']>event_threshold['significance_threshold'])&(self.raw_event_box['area']>event_threshold['charge_threshold'])&(self.raw_event_box['rchi2']<event_threshold['rchi2_threshold']))
+        self.event_box = copy.copy(event_threshold)
         for _k,_v in self.raw_event_box.items():
             self.event_box[_k] = _v[_valid_events]
         
