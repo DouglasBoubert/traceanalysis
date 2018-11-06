@@ -3,6 +3,7 @@ User-defined Python extensions that can be called from the menu.
 """
 
 import spells
+import traceanalysis
 
 # class to create a submenu of Extensions
 class Extension(object):
@@ -28,5 +29,6 @@ class Extension(object):
 
 # define an Extension: it will appear as a submenu in the Extensions Menu
 myExt = Extension("Count APs", spells.count_aps, "Count events >0 mV in selected files", True)
+traceanalysisExt = Extension("Analyse trace", traceanalysis.__main__, "Analyses the current trace according to controlpanel.json.", True)
 
-extensionList = [myExt,]
+extensionList = [myExt,traceanalysisExt,]
