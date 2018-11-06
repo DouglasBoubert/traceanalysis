@@ -14,7 +14,7 @@ from scipy import stats
 class NoiseStripper:
     # Class that takes in data and removes significant spikes.
     # Also removes median.
-    def __init__(self, trace, data_prob_bound=0.5, median_window=1.0, median_spike_window = 10., freq_bound=5.0, min_freq=20.0, notch_band=1.0):
+    def __init__(self, trace, data_prob_bound=0.5, median_window=1.0, median_spike_window = 100., freq_bound=5.0, min_freq=20.0, notch_band=1.0):
         # Initial sorting of data
         self.data = copy.copy(trace)
         self.dt = utilities.dt()
@@ -62,7 +62,7 @@ class NoiseStripper:
     def _obtain_fourier_amplitudes(self): 
         # Fourier transform data
         _w = signal.blackman(self.N)
-        self.ft_data_clean = utilities.fourier(_w*self.data,self.dt)/self.dt
+        self.ft_data_clean = utilities.fourier(_w*self.data_clean,self.dt)/self.dt
         self.amp = 2.0/self.N * np.abs(self.ft_data_clean)
 
     def _significance_of_amplitudes(self):
