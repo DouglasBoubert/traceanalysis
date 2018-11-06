@@ -11,6 +11,9 @@
   "noisestripper":{
     "active": true
   },
+  "minievents":{
+    "active": false
+  },
   "utilities":{
     "biexponential_params_defaults":{
       "rise": 1.0,

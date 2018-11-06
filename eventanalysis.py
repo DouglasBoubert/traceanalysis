@@ -11,11 +11,12 @@ import utilities
 import bigevents
 import noisestripper
 import dropoutfixer
+import minievents
 import json
 
 # Identify bigevents
 class EventAnalysis:
-    def __init__(self, trace=stf.get_trace()):
+    def __init__(self, trace):
         # Initial sorting of data
         self.data = []
         self.data.append(trace)
@@ -49,5 +50,16 @@ class EventAnalysis:
             self.data.append(NS.data_squeaky_clean)
             _start_end_mask = np.concatenate([np.arange(0,NS.start_end_offset),np.arange(self.data[0].size-NS.start_end_offset,self.data[0].size)])
             self._mask_update(_start_end_mask)
+
+        # Identify and fit mini events
+        if self.control['minievents']['active']:
+            MEH = minievents.MiniEventHandler(self.data[-1])
+            MEH.run()
+            self.data.append(MEH.data_residual) 
         # Plot the results
         stf.new_window_list(self.data)
+
+def __main__(trace=stf.get_trace()):
+    EA = EventAnalysis(trace=trace)
+    EA.run()
+    return EA
