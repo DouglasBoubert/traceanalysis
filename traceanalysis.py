@@ -59,7 +59,7 @@ class TraceAnalysis:
         # Plot the results
         stf.new_window_list(self.data)
 
-def __main__(trace=stf.get_trace()):
-    TA = TraceAnalysis(trace=trace)
+def __main__():
+    TA = TraceAnalysis(trace=stf.get_trace())
     TA.run()
-    return TA
+    return True
