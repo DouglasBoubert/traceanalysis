@@ -31,7 +31,7 @@ class Extension(object):
 myExt = Extension("Count APs", spells.count_aps, "Count events >0 mV in selected files", True)
 traceanalysisExt = Extension("Analyse trace", traceanalysis.__main__, "Analyses the current trace according to controlpanel.json.", True)
 bigandnoiseExt = Extension("Big events and noise", traceanalysis.__big_and_noise__, "Applies big event handler and noise stripping to the current trace according to controlpanel.json.", True)
-noiseandminisExt = Extension("Analyse trace", traceanalysis.__noise_and_mini__, "Applies noise stripping and mini event handler to the current trace according to controlpanel.json.", True)
-noiseonlyExt = Extension("Analyse trace", traceanalysis.__noise_only__, "Applies noise stripping to the current trace according to controlpanel.json.", True)
+noiseandminisExt = Extension("Noise and mini events", traceanalysis.__noise_and_mini__, "Applies noise stripping and mini event handler to the current trace according to controlpanel.json.", True)
+noiseonlyExt = Extension("Noise only", traceanalysis.__noise_only__, "Applies noise stripping to the current trace according to controlpanel.json.", True)
 
 extensionList = [myExt,traceanalysisExt,bigandnoiseExt,noiseandminisExt,noiseonlyExt,]
