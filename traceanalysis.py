@@ -85,3 +85,9 @@ def __noise_only__():
     CONTROL_OVERRIDE = {"bigevents":{"active":False},"dropoutfixer":{"active":False},"noisestripper":{"active":True},"minievents":{"active":False}}
     TA.run(CONTROL_OVERRIDE=CONTROL_OVERRIDE)
     return True
+
+def __mini_only__():
+    TA = TraceAnalysis(trace=stf.get_trace())
+    CONTROL_OVERRIDE = {"bigevents":{"active":False},"dropoutfixer":{"active":False},"noisestripper":{"active":False},"minievents":{"active":True}}
+    TA.run(CONTROL_OVERRIDE=CONTROL_OVERRIDE)
+    return True

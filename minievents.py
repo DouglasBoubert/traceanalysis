@@ -244,6 +244,7 @@ class MiniEventHandler:
 
     def _show_mini_events(self):
         # Place markers
+        stf.new_window_list([self.data,self.data_residual])
         stf.erase_markers()
         for _i in range(self.event_box['N']):
             stf.set_marker(self.event_box['max_idx'][_i],-self.event_box['amplitude'][_i])
@@ -256,7 +257,7 @@ class MiniEventHandler:
         self.result_box = _result_box
         stf.show_table_dictlist(self.result_box,caption='Mini event table')
 
-        #stf.new_window_list([self.data,self.data_residual])
+        
 
         # new window with all events
         _event_list = [self.data[int(t/self.dt) - 100:int(t/self.dt) + 600] for t in self.event_box['t']]
