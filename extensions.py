@@ -35,4 +35,4 @@ noiseandminisExt = Extension("Noise and mini events", traceanalysis.__noise_and_
 noiseonlyExt = Extension("Noise only", traceanalysis.__noise_only__, "Applies noise stripping to the current trace according to controlpanel.json.", True)
 minionlyExt = Extension("Mini only", traceanalysis.__mini_only__, "Applies mini event handler to the current trace according to controlpanel.json.", True)
 
-extensionList = [myExt,traceanalysisExt,bigandnoiseExt,noiseandminisExt,minionlyExt,]
+extensionList = [myExt,traceanalysisExt,bigandnoiseExt,noiseandminisExt,noiseonlyExt,minionlyExt,]
