@@ -202,13 +202,13 @@ class MiniEventHandler:
             _peak_score = self.score[int(START_T/self.dt)]
             self.raw_event_box['offset'].append(OFFSET)
             self.raw_event_box['gradient'].append(GRADIENT)
-            self.raw_event_box['scale'].append(SCALE)
+            self.raw_event_box['amplitude'].append(SCALE)
             self.raw_event_box['params'].append(PARAMS)
             for key, ik in zip(self._template_params_names(), range(len(self._template_params_names()))):
                 self.raw_event_box[key].append(PARAMS[ik])
             self.raw_event_box['t'].append(START_T)
             self.raw_event_box['noise'].append(NOISE)
-            self.raw_event_box['bayes_factor'].append(_peak_score)
+            self.raw_event_box['score'].append(_peak_score)
             self.raw_event_box['siblings'].append(_N_MODEL-1)
             self.raw_event_box['rchi2'].append(RCHI2)
         self.mask = np.union1d(self.mask,range(_first_peak-_left_extension,_last_peak+_right_extension)).astype(np.int_)
@@ -222,13 +222,15 @@ class MiniEventHandler:
                 
     def _post_process_event_box(self,event_threshold):
         # Remove events below event threshold
-        _raw_event_box_N = len(self.raw_event_box['scale'])
+        _raw_event_box_N = len(self.raw_event_box['amplitude'])
         self.raw_event_box['peak_time'] = np.zeros(_raw_event_box_N)
-        self.raw_event_box['area'] = np.zeros(_raw_event_box_N)
+        self.raw_event_box['charge'] = np.zeros(_raw_event_box_N)
+        self.raw_event_box['half_life'] = np.zeros(_raw_event_box_N)
         for ie in range(_raw_event_box_N):
             self.raw_event_box['peak_time'][ie] = self._template_peak(PARAMS = self.raw_event_box['params'][ie])
-            self.raw_event_box['area'][ie] = np.abs(self.raw_event_box['scale'][ie]*self._template_area(PARAMS = self.raw_event_box['params'][ie]))
-        _valid_events = np.where(((self.raw_event_box['scale'])<=-event_threshold['current_threshold'])&(-(self.raw_event_box['scale'])/self.raw_event_box['noise']>event_threshold['significance_threshold'])&(self.raw_event_box['area']>event_threshold['charge_threshold'])&(self.raw_event_box['rchi2']<event_threshold['rchi2_threshold']))
+            self.raw_event_box['charge'][ie] = np.abs(self.raw_event_box['amplitude'][ie]*self._template_area(PARAMS = self.raw_event_box['params'][ie]))
+            self.raw_event_box['half_life'][ie] = utilities._template_half_life(TEMPLATE = self._template, TEMPLATE_PEAK = self._template_peak, PARAMS = self.raw_event_box['params'][ie])
+        _valid_events = np.where(((self.raw_event_box['amplitude'])<=-event_threshold['current_threshold'])&(-(self.raw_event_box['amplitude'])/self.raw_event_box['noise']>event_threshold['significance_threshold'])&(self.raw_event_box['charge']>event_threshold['charge_threshold'])&(self.raw_event_box['rchi2']<event_threshold['rchi2_threshold']))
         self.event_box = copy.copy(event_threshold)
         for _k,_v in self.raw_event_box.items():
             self.event_box[_k] = _v[_valid_events]
@@ -244,11 +246,11 @@ class MiniEventHandler:
         # Place markers
         stf.erase_markers()
         for _i in range(self.event_box['N']):
-            stf.set_marker(self.event_box['max_idx'][_i],-self.event_box['scale'][_i])
+            stf.set_marker(self.event_box['max_idx'][_i],-self.event_box['amplitude'][_i])
 
         # Create results table
         _result_box = {}
-        _interesting = ['t','bayes_factor','scale']+self._template_params_names()
+        _interesting = ['t','score','amplitude','charge','peak_time','half_life']+self._template_params_names()
         for k in _interesting:
             _result_box[k] = list(self.event_box[k])
         self.result_box = _result_box
@@ -292,7 +294,7 @@ class MiniEventHandler:
         self.last_event_index = 0
         self.quit_bool = False
         
-        self.raw_event_box = {'params':[],'offset':[],'gradient':[],'scale':[],'t':[],'noise':[],'bayes_factor':[],'siblings':[],'rchi2':[]}
+        self.raw_event_box = {'params':[],'offset':[],'gradient':[],'amplitude':[],'t':[],'noise':[],'score':[],'siblings':[],'rchi2':[]}
         for key in self._template_params_names():
                 self.raw_event_box[key]=[]
         while loop_tracker == False:

@@ -155,3 +155,14 @@ def obtain_template(TEMPLATE_NAME='biexponential'):
         return _biexponential, _biexponential_peak, _biexponential_area, _biexponential_params_names, _biexponential_params_ranges, _biexponential_params_defaults
     elif TEMPLATE_NAME == 'triexponential':
         return _triexponential, _triexponential_peak, _triexponential_area, _triexponential_params_names, _triexponential_params_ranges, _triexponential_params_defaults
+
+def _template_half_life(TEMPLATE,TEMPLATE_PEAK,PARAMS):
+    _PEAK = TEMPLATE_PEAK(PARAMS)
+    def _G0(x):
+        if x<0:
+            return 1.0
+        else:
+            #return NORM*(1.0-exp(-(1.0+x)*t_peak/RISE))*exp(-(1.0+x)*t_peak/DECAY) - 0.5
+            return TEMPLATE(np.array([(1.0+float(x))*_PEAK]),PARAMS)-0.5
+    _ROOT = optimize.newton(_G0, 0.1,maxiter=1000)
+    return float(_ROOT*_PEAK)
