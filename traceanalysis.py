@@ -22,14 +22,18 @@ class TraceAnalysis:
         self.data.append(trace)
         self.mask = np.array([])
         with open('controlpanel.json') as f:
-            self.control = json.load(f)
+            self.control_default = json.load(f)
 
     def _mask_update(self,_new_mask):
         self.mask = np.union1d(self.mask,_new_mask).astype(np.int_)
 
-    def run(self):
+    def run(self,CONTROL_OVERRIDE=None):
         # Runs the analysis
-
+        self.control = copy.copy(self.control_default)
+        if CONTROL_OVERRIDE != None:
+            for _process in CONTROL_OVERRIDE.keys():
+                for _key in CONTROL_OVERRIDE[_process].keys():
+                    self.control[_process][_key] = CONTROL_OVERRIDE[_process][_key]
         # Handle the big events
         if self.control['bigevents']['active']:
             BEH = bigevents.BigEventHandler(self.data[-1],min_charge = self.control['bigevents']['min_charge'], event_time = self.control['bigevents']['event_time'], median_window=self.control['bigevents']['median_window'])
@@ -62,4 +66,22 @@ class TraceAnalysis:
 def __main__():
     TA = TraceAnalysis(trace=stf.get_trace())
     TA.run()
+    return True
+
+def __big_and_noise__():
+    TA = TraceAnalysis(trace=stf.get_trace())
+    CONTROL_OVERRIDE = {"bigevents":{"active":True},"dropoutfixer":{"active":False},"noisestripper":{"active":True},"minievents":{"active":False}}
+    TA.run(CONTROL_OVERRIDE=CONTROL_OVERRIDE)
+    return True
+
+def __noise_and_mini__():
+    TA = TraceAnalysis(trace=stf.get_trace())
+    CONTROL_OVERRIDE = {"bigevents":{"active":False},"dropoutfixer":{"active":False},"noisestripper":{"active":True},"minievents":{"active":True}}
+    TA.run(CONTROL_OVERRIDE=CONTROL_OVERRIDE)
+    return True
+
+def __noise_only__():
+    TA = TraceAnalysis(trace=stf.get_trace())
+    CONTROL_OVERRIDE = {"bigevents":{"active":False},"dropoutfixer":{"active":False},"noisestripper":{"active":True},"minievents":{"active":False}}
+    TA.run(CONTROL_OVERRIDE=CONTROL_OVERRIDE)
     return True
