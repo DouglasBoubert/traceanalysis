@@ -9,6 +9,7 @@ import utilities
 import copy
 from scipy import signal
 from scipy import stats
+import time
 
 # Define a class
 class NoiseStripper:
@@ -110,22 +111,32 @@ class NoiseStripper:
 
     def run(self):
         # Obtain Fourier amplitudes
+        _t = time.time()
         self._obtain_fourier_amplitudes()
         print 'Obtained Fourier amplitudes'
+        print time.time()-_t
 
         # Assess significance of Fourier amplitudes
+        _t = time.time()
         self._significance_of_amplitudes()
         print 'Assessed significance of Fourier amplitudes'
+        print time.time()-_t
 
         # Group candidate spikes together
+        _t = time.time()
         self._group_spikes_together()
         print 'Grouped spikes together'
+        print time.time()-_t
 
         # Process spike groups
+        _t = time.time()
         self._process_spike_groups()
         print 'Processed spike groups'
+        print time.time()-_t
             
         # Remove spikes
+        _t = time.time()
         self._remove_spikes()
         print 'Removed spikes'
+        print time.time()-_t
         
