@@ -17,9 +17,27 @@ import json
 # Identify bigevents
 class TraceAnalysis:
     def __init__(self, trace):
+        # We are going to be taking many fourier transforms.
+        # The standard FFT in numpy is slow for numbers with large prime factors.
+        # We cut the trace down until the largest of its prime factors is < 100.
+        def cut(_N,_max_factor = 100):
+            def largest_prime_factor(n):
+                i = 2
+                while i * i <= n:
+                    if n % i:
+                        i += 1
+                    else:
+                        n //= i
+                return n
+            _CUT = 0
+            while largest_prime_factor(_N+_CUT) > _max_factor:
+                _CUT-=1
+            return _CUT
+        _cut = cut(trace.size)
+
         # Initial sorting of data
         self.data = []
-        self.data.append(trace)
+        self.data.append(trace[:_cut])
         self.mask = np.array([])
         with open('controlpanel.json') as f:
             self.control_default = json.load(f)

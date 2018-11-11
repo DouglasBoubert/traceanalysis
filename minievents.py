@@ -37,6 +37,14 @@ class MiniEventHandler:
         self._template, self._template_peak, self._template_area, self._template_params_names, self._template_params_ranges, self._template_params_defaults = utilities.obtain_template(TEMPLATE_NAME=self.template_name)
 
     def _initial_classify_events(self):
+        # Carry out fourier transforms
+        ### Get Fourier transform of data
+        self.ft_data = utilities.fourier(self.data,self.dt)
+        #self.ft_data_residual = copy.copy(self.ft_data)
+        ### Get Fourier transform of template
+        self.ft_template = utilities.fourier(self.template,self.dt)
+        self.ft_template_short = utilities.fourier(self.template_short,self.dt)
+
         # Calculate correlations
         _score = -np.fft.irfft(self.ft_data * self.ft_template.conjugate(),n=self.data.size)
         
@@ -271,15 +279,6 @@ class MiniEventHandler:
         # Calculate background noise level
         self.noise_med, self.noise_std = utilities.rolling(self.data,FUNC='SUFFICIENT_STATISTICS',WINDOW=10*self.median_window)
         print "Classified background noise"
-
-        # Get Fourier transform of data
-        t = time.time()
-        self.ft_data = utilities.fourier(self.data,self.dt)
-        print time.time()-t
-        
-        # Get Fourier transform of template
-        self.ft_template = utilities.fourier(self.template,self.dt)
-        self.ft_template_short = utilities.fourier(self.template_short,self.dt)
         
         # Get score_of_events
         self._initial_classify_events()
@@ -287,7 +286,6 @@ class MiniEventHandler:
 
         # Create copy of data residuals
         self.data_residual = copy.copy(self.data)
-        self.ft_data_residual = copy.copy(self.ft_data)
         
         # Loop over top N_events
         loop_tracker = False
