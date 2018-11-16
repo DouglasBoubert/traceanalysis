@@ -9,7 +9,8 @@
     "active": false
   },
   "noisestripper":{
-    "active": true
+    "active": true,
+    "median_window": 0.1
   },
   "minievents":{
     "active": true,

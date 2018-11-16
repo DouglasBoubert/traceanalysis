@@ -67,7 +67,7 @@ class TraceAnalysis:
 
         # Strip the median and noise
         if self.control['noisestripper']['active']:
-            NS = noisestripper.NoiseStripper(self.data[-1],median_window=1.0)
+            NS = noisestripper.NoiseStripper(self.data[-1],median_window=self.control['noisestripper']['median_window'])
             NS.run()
             self.data.append(NS.data_squeaky_clean)
             _start_end_mask = np.concatenate([np.arange(0,NS.start_end_offset),np.arange(self.data[0].size-NS.start_end_offset,self.data[0].size)])

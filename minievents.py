@@ -201,7 +201,10 @@ class MiniEventHandler:
             _intermediate_score = np.pad(_intermediate_score, (0,self.score.size-_intermediate_score.size), 'constant', constant_values=(1e-18,1e-18))
             _score_adjust = _intermediate_score/self.score_std
             _fit_template = np.concatenate([1e-18*np.ones(_event_mod*self.t_short.size+_event_idx%self.t_short.size),_fit_template_short])
-            _fit_template = np.pad(_fit_template, (0,self.t.size-_fit_template.size), 'constant', constant_values=(0.0,0.0))
+            #print _event_mod,self.t_short.size,_event_idx%self.t_short.size,_fit_template_short.size,_event_idx
+            #print self.t.size, _fit_template.size
+            _fit_template = np.pad(_fit_template, (0,max(0,self.t.size-_fit_template.size)), 'constant', constant_values=(0.0,0.0))
+            _fit_template = _fit_template[:self.t.size] # chop off bit that runs off end
             self.data_residual -= _fit_template
             self.score += _score_adjust
             self.data_list.append(self.data_residual)
