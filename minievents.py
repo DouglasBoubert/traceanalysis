@@ -137,7 +137,7 @@ class MiniEventHandler:
         # Gather useful quantities
         _data_scale = np.abs(_data.max()-_data.min())
         _range_start_t = [2.0*_default_peak_time,_default_peak_time]
-        _weights= np.exp(-((_time[:,np.newaxis]-_time[_peaks])**2.0/(2.0*(10.0*_default_peak_time)**2.0))).sum(axis=1)
+        _weights= np.exp(-((_time[:,np.newaxis]-_time[_peaks])**2.0/(2.0*(3.0*_default_peak_time)**2.0))).sum(axis=1)
         
         #_PEAKS = [_p+_mean_start_index-_first_peak for _p in _peaks] # Calculate where the peaks are in the new system
 

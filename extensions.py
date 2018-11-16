@@ -34,5 +34,7 @@ bigandnoiseExt = Extension("Big events and noise", traceanalysis.__big_and_noise
 noiseandminisExt = Extension("Noise and mini events", traceanalysis.__noise_and_mini__, "Applies noise stripping and mini event handler to the current trace according to controlpanel.json.", True)
 noiseonlyExt = Extension("Noise only", traceanalysis.__noise_only__, "Applies noise stripping to the current trace according to controlpanel.json.", True)
 minionlyExt = Extension("Mini only", traceanalysis.__mini_only__, "Applies mini event handler to the current trace according to controlpanel.json.", True)
+bigonlyExt = Extension("Big only", traceanalysis.__big_only__, "Applies big event handler to the current trace according to controlpanel.json.", True)
+verybigonlyExt = Extension("Very big only", traceanalysis.__very_big_only__, "Applies very big event handler to the current trace according to controlpanel.json.", True)
 
-extensionList = [myExt,traceanalysisExt,bigandnoiseExt,noiseandminisExt,noiseonlyExt,minionlyExt,]
+extensionList = [myExt,traceanalysisExt,bigandnoiseExt,noiseandminisExt,noiseonlyExt,minionlyExt,bigonlyExt,verybigonlyExt,]

@@ -8,7 +8,7 @@ import copy
 
 # Identify bigevents
 class BigEventHandler:
-    def __init__(self, trace, min_charge = -50, event_time = 10, median_window=1000.0):
+    def __init__(self, trace, min_charge = -200, event_time = 100, median_window=1000.0,fixing_interval=100):
         # Initial sorting of data
         self.data = copy.copy(trace)
         self.dt = stf.get_sampling_interval()
@@ -18,12 +18,17 @@ class BigEventHandler:
         self.min_charge = min_charge
         self.event_time = event_time
         self.event_window = int(event_time/self.dt)
-        self.fixing_interval = 10
-        self.start_end_offset = int(median_window/(2.0*self.dt))
+        self.fixing_interval = fixing_interval
+        
         self.big_event_mask=np.array([])
 
         # Remove median
-        self.data_clean = self.data-utilities.rolling(self.data,WINDOW=self.median_window,FUNC='MEDIAN')
+        if median_window <0.0:
+            self.data_clean = self.data-np.median(self.data)
+            self.start_end_offset = 10
+        else:
+            self.data_clean = self.data-utilities.rolling(self.data,WINDOW=self.median_window,FUNC='MEDIAN')
+            self.start_end_offset = int(median_window/(2.0*self.dt))
 
     def _rolling_charge(self,TARGET):
         # Note that the charge in the first and last half-median-window is set to zero.
@@ -48,7 +53,7 @@ class BigEventHandler:
                 _loop = False
                 continue
 
-            _baseline = np.where((_charge-self.charge_med)/self.charge_std>-1)
+            _baseline = np.where((_charge-self.charge_med)/self.charge_std>0)
             _maxchargetime = self.t[np.argmin(_charge)]
             _interval = np.where(np.abs(self.t-_maxchargetime)<self.event_time/2.0)[0]
             _peaktime = _interval[0]+np.argmin(_data_clean[_interval])

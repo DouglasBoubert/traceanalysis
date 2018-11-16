@@ -37,7 +37,10 @@ class TraceAnalysis:
 
         # Initial sorting of data
         self.data = []
-        self.data.append(trace[:_cut])
+        if _cut > 0:
+            self.data.append(trace[:_cut])
+        else:
+            self.data.append(trace)
         self.mask = np.array([])
         with open('controlpanel.json') as f:
             self.control_default = json.load(f)
@@ -54,7 +57,7 @@ class TraceAnalysis:
                     self.control[_process][_key] = CONTROL_OVERRIDE[_process][_key]
         # Handle the big events
         if self.control['bigevents']['active']:
-            BEH = bigevents.BigEventHandler(self.data[-1],min_charge = self.control['bigevents']['min_charge'], event_time = self.control['bigevents']['event_time'], median_window=self.control['bigevents']['median_window'])
+            BEH = bigevents.BigEventHandler(self.data[-1],min_charge = self.control['bigevents']['min_charge'], event_time = self.control['bigevents']['event_time'], median_window=self.control['bigevents']['median_window'], fixing_interval=self.control['bigevents']['fixing_interval'])
             BEH.run()
             self.data.append(BEH.data_residual)
             self._mask_update(BEH.big_event_mask)
@@ -77,7 +80,8 @@ class TraceAnalysis:
         if self.control['minievents']['active']:
             MEH = minievents.MiniEventHandler(self.data[-1], mask=self.mask, template_name = self.control['minievents']['template_name'], event_time = self.control['minievents']['event_time'], median_window = self.control['minievents']['median_window'], bayes_bound = self.control['minievents']['bayes_bound'], bayes_weight = self.control['minievents']['bayes_weight'], score_bound = self.control['minievents']['score_bound'], min_peak_current = self.control['minievents']['min_peak_current'], event_number_barrier = self.control['minievents']['event_number_barrier'], event_threshold = self.control['minievents']['event_threshold'])
             MEH.run()
-            self.data.append(MEH.data_residual) 
+            self.data.append(MEH.data_residual)
+            self.event_box = MEH.event_box
         # Plot the results
         stf.new_window_list(self.data)
 
@@ -107,5 +111,17 @@ def __noise_only__():
 def __mini_only__():
     TA = TraceAnalysis(trace=stf.get_trace())
     CONTROL_OVERRIDE = {"bigevents":{"active":False},"dropoutfixer":{"active":False},"noisestripper":{"active":False},"minievents":{"active":True}}
+    TA.run(CONTROL_OVERRIDE=CONTROL_OVERRIDE)
+    return True
+
+def __big_only__():
+    TA = TraceAnalysis(trace=stf.get_trace())
+    CONTROL_OVERRIDE = {"bigevents":{"active":True},"dropoutfixer":{"active":False},"noisestripper":{"active":False},"minievents":{"active":False}}
+    TA.run(CONTROL_OVERRIDE=CONTROL_OVERRIDE)
+    return True
+
+def __very_big_only__():
+    TA = TraceAnalysis(trace=stf.get_trace())
+    CONTROL_OVERRIDE = {"bigevents":{"active":True,"median_window":-1.0,"fixing_interval":500},"dropoutfixer":{"active":False},"noisestripper":{"active":False},"minievents":{"active":False}}
     TA.run(CONTROL_OVERRIDE=CONTROL_OVERRIDE)
     return True

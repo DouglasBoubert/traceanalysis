@@ -2,8 +2,9 @@
   "bigevents":{
     "active": true,
     "min_charge": -200, 
-    "event_time": 10,
-    "median_window": 1000.0
+    "event_time": 100,
+    "median_window": 1000.0,
+    "fixing_interval": 10
   },
   "dropoutfixer":{
     "active": false
