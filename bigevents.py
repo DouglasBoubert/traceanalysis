@@ -138,7 +138,7 @@ class BigEventHandler:
             _peak_idx = _event_interval_idx[np.argmin(self.data[_event_interval_idx])]
             self.event_box[_event_key]['peak_idx'] = _peak_idx
             self.event_box[_event_key]['peak_time'] = self.t[_peak_idx]
-            self.event_box[_event_key]['peak_current'] = self.data[_peak_idx]
+            
 
             _data_med_inner, _data_std_inner = utilities.sufficient_statistics(self.data[_box['event_start_idx']-self.fixing_interval:_box['event_start_idx']])
             _data_med_outer, _data_std_outer = utilities.sufficient_statistics(self.data[_box['event_end_idx']+1:_box['event_end_idx']+1+self.fixing_interval])
@@ -147,6 +147,7 @@ class BigEventHandler:
             self.event_box[_event_key]['event_charge'] = self.dt*np.sum(self.data[_event_interval_idx]-_data_residual[_event_interval_idx])
             #print _data_std_inner, _data_std_outer, _box['event_start_idx']-self.fixing_interval
             _data_residual[_event_interval_idx] += np.random.normal(0.0,_data_std,len(_event_interval_idx))
+            
 
         # Store residual data
         self.data_residual = _data_residual
@@ -155,11 +156,13 @@ class BigEventHandler:
         # Place markers
         stf.erase_markers()
         for k in self.event_box.keys():
+            _peak_idx = self.event_box[k]['peak_idx']
+            self.event_box[k]['peak_current'] = self.data[_peak_idx]-self.data_residual[_peak_idx]
             stf.set_marker(self.event_box[k]['peak_idx'],self.event_box[k]['peak_current'])
 
         # Create results table
         _result_box = {}
-        _interesting = ['event_charge','event_start_time','event_end_time']
+        _interesting = ['event_charge','event_start_time','event_end_time','peak_current']
         for k in _interesting:
             _result_box[k] = [self.event_box[kbox][k] for kbox in self.event_box.keys()]
         self.result_box = _result_box
