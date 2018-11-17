@@ -96,7 +96,7 @@ def _biexponential_params_names():
     return ['rise','decay']
 
 def _biexponential_params_ranges():
-    return [(1e-10,1e5),(1e-1,1e2)]
+    return [(1e-10,1e5),(1e-1,3e1)]
 
 def _biexponential_params_defaults():
     return [_control['biexponential_params_defaults'][k] for k in _biexponential_params_names()]

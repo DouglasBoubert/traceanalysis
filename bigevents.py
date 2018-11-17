@@ -53,7 +53,7 @@ class BigEventHandler:
                 _loop = False
                 continue
 
-            _baseline = np.where((_charge-self.charge_med)/self.charge_std>0)
+            _baseline = np.where((_charge-self.charge_med)/self.charge_std>-0.0)
             _maxchargetime = self.t[np.argmin(_charge)]
             _interval = np.where(np.abs(self.t-_maxchargetime)<self.event_time/2.0)[0]
             _peaktime = _interval[0]+np.argmin(_data_clean[_interval])
@@ -111,6 +111,7 @@ class BigEventHandler:
                 _event_box[_event_idx]['event_end_idx'] = max(_event_box[_event_idx]['event_end_idx'],_event_box[_sub_event_idx]['event_end_idx'])
                 _event_box[_event_idx]['event_duration'] = _event_box[_event_idx]['event_end_time']-_event_box[_event_idx]['event_start_time']
                 del _event_box[_sub_event_idx]
+                print 'merged at',_sub_event_idx
 
             _event_idx += 1
 

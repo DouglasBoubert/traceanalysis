@@ -122,6 +122,6 @@ def __big_only__():
 
 def __very_big_only__():
     TA = TraceAnalysis(trace=stf.get_trace())
-    CONTROL_OVERRIDE = {"bigevents":{"active":True,"median_window":-1.0,"fixing_interval":500},"dropoutfixer":{"active":False},"noisestripper":{"active":False},"minievents":{"active":False}}
+    CONTROL_OVERRIDE = {"bigevents":{"active":True,"median_window":-1.0,"fixing_interval":300},"dropoutfixer":{"active":False},"noisestripper":{"active":False},"minievents":{"active":False}}
     TA.run(CONTROL_OVERRIDE=CONTROL_OVERRIDE)
     return True
