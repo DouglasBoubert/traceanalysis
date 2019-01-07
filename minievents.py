@@ -11,12 +11,14 @@ import matplotlib.pyplot as plt
 
 # Identify minievents
 class MiniEventHandler:
-    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=10,event_threshold = {'current_threshold':0.0,'charge_threshold':0.0,'significance_threshold':0.0,'rchi2_threshold':np.inf}):
+    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=10,event_threshold = {'current_threshold':5.0,'charge_threshold':2.0,'significance_threshold':2.0,'rchi2_threshold':0.85}):
         # Initial sorting of data
         self.data = copy.copy(trace)
         self.dt = stf.get_sampling_interval()
+        #print(self.dt)
         self.N = self.data.size
         self.t = self.dt*np.array(range(self.N))
+        #print(median_window)
         self.median_window = int(median_window/self.dt)
         self.event_time = event_time
         self.event_window = int(event_time/self.dt)
@@ -88,36 +90,42 @@ class MiniEventHandler:
         
     
     def _fit_and_remove_event(self,_mean_start_index,_n_points=100):
-        # Are there multiple significant peaks?
-
+        
         NOISE = self.noise_std[_mean_start_index]
         MEDIAN = self.noise_med[_mean_start_index]
+        _left_extension = _n_points
+        _right_extension = int(2.0*_n_points)
+
+        # Are there multiple significant peaks?
         _peaks_bool = True
         _peaks = [_n_points]
         _previous_peaks = []
         _first_peak = _mean_start_index+min(_peaks)-_n_points
         _last_peak = _mean_start_index+max(_peaks)-_n_points
         _default_peak_time = self._template_peak(PARAMS=self._template_params_defaults())
-        _left_extension = _n_points
-        _right_extension = int(2.0*_n_points)
+        from scipy.signal import savgol_filter
+        
 
         while _peaks_bool:
             _score = self.score[_first_peak-_left_extension:_last_peak+_right_extension]
-            _data = self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension]
+            _data = savgol_filter(self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension],5, 1)
             _time = self.t[_first_peak-_left_extension:_last_peak+_right_extension]
             _peaks = []
             _peaks_heights = []
+            #print('here')
             _suggested_peaks, _peaks_props  = signal.find_peaks(-_data,prominence=NOISE*2,height = self.min_peak_current+NOISE,width=2)
+            #print(_suggested_peaks,NOISE)
             if len(_suggested_peaks) == 0:
                 self.score[-10+_mean_start_index:10+_mean_start_index] = 0.0
                 return False
+            #print('here')
             for _peak_idx,_peak_height in zip(_suggested_peaks,_peaks_props['peak_heights']):
                 _mad_idx = int((_time[_peak_idx]-_default_peak_time)/self.dt)
                 _max_score = self.score[_mad_idx]
-                if _max_score>0.5:
+                if _max_score>0.5 and _peak_height > 10.0:
                     _peaks.append(_peak_idx)
                     _peaks_heights.append(-_peak_height)
-
+            #print(_peaks)
             if _peaks == _previous_peaks and len(_peaks)>0 and _n_points in _peaks:
                 _peaks_bool=False
             elif len(_peaks) == 0:
@@ -131,13 +139,13 @@ class MiniEventHandler:
         
         # Pull out time and data information
         _score = self.score[_first_peak-_left_extension:_last_peak+_right_extension]
-        _data = self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension]
+        _data = savgol_filter(self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension],5, 1)
         _time = self.t[_first_peak-_left_extension:_last_peak+_right_extension]
 
         # Gather useful quantities
         _data_scale = np.abs(_data.max()-_data.min())
         _range_start_t = [2.0*_default_peak_time,_default_peak_time]
-        _weights= np.exp(-((_time[:,np.newaxis]-_time[_peaks])**2.0/(2.0*(3.0*_default_peak_time)**2.0))).sum(axis=1)
+        _weights= np.exp(-((_time[:,np.newaxis]-_time[_peaks])**2.0/(2.0*(5.0*_default_peak_time)**2.0))).sum(axis=1)
         
         #_PEAKS = [_p+_mean_start_index-_first_peak for _p in _peaks] # Calculate where the peaks are in the new system
 
@@ -157,12 +165,16 @@ class MiniEventHandler:
 
 
         def _target(X,_NMODEL=1):
+        #def _target(X,ARGS):
+        #    _NMODEL=ARGS[0]
             _model = _super_model(_time,X,_NMODEL)
             return (-(-0.5*(_data-_model)**2.0/NOISE**2.0)*_weights).sum()
 
         # Set up initial location and bounds
-        _X0 = [MEDIAN,0.0]
-        _bnds = [(_data.min(), _data.max()),(-1.0,1.0)]
+        #_X0 = [MEDIAN,0.0]
+        #_bnds = [(_data.min(), _data.max()),(-1.0,1.0)]
+        _X0 = [0.0,0.0]
+        _bnds = [(-0.1, 0.1),(-0.1,0.1)]
         _N_MODEL = len(_peaks)
         _N_PARAMS = 2+len(self._template_params_names())
         for _p, _h in zip(_peaks,_peaks_heights):
@@ -171,10 +183,11 @@ class MiniEventHandler:
             _bnds += [(_mean_start_t-_range_start_t[0], _mean_start_t+_range_start_t[1]),(1.5*_h, 0.5*_h)] + self._template_params_ranges()
         _opt = {'gtol':1e-10,'ftol':1e-10,'maxfun':100000}
         _res = optimize.minimize(_target,_X0,method='L-BFGS-B', tol=1e-10, bounds=_bnds, options=_opt, args=(_N_MODEL))
-
+        #_res = optimize.dual_annealing(_target, bounds=_bnds, args=(_N_MODEL,),x0=_X0)
+        #print(_res)
         # Pull out quantities of interest and check success
         OFFSET, GRADIENT, EVENT_PARAMS = _res['x'][0], _res['x'][1], _res['x'][2:].reshape((_N_MODEL,_N_PARAMS))
-        RCHI2 = np.mean(_weights*np.abs(_data-_super_model(_time,_res['x'],len(_peaks)))/NOISE)
+        RCHI2 = np.mean(np.abs(_data-_super_model(_time,_res['x'],len(_peaks)))/NOISE)
         if _res['success'] == False and RCHI2 > 1.5:
             self.quit_bool = True
             print _res
@@ -280,7 +293,8 @@ class MiniEventHandler:
         self.template_short = self.template[:self.event_window*5]
         
         # Calculate background noise level
-        self.noise_med, self.noise_std = utilities.rolling(self.data,FUNC='SUFFICIENT_STATISTICS',WINDOW=10*self.median_window)
+        self.noise_med, self.noise_std = utilities.rolling(self.data,FUNC='SUFFICIENT_STATISTICS',WINDOW=2*self.median_window)
+        #print(self.median_window,self.noise_med[10000])
         print "Classified background noise"
         
         # Get score_of_events

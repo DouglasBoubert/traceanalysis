@@ -82,6 +82,9 @@ class TraceAnalysis:
             MEH.run()
             self.data.append(MEH.data_residual)
             self.event_box = MEH.event_box
+            self.raw_event_box = MEH.raw_event_box
+            self.meh_noise = MEH.noise_std
+            print(self.control['minievents']['median_window'])
         # Plot the results
         stf.new_window_list(self.data)
 
