@@ -37,7 +37,7 @@ class TraceAnalysis:
 
         # Initial sorting of data
         self.data = []
-        if _cut > 0:
+        if _cut < 0:
             self.data.append(trace[:_cut])
         else:
             self.data.append(trace)
