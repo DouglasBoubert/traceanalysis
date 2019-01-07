@@ -14,7 +14,7 @@
     "median_window": 0.1
   },
   "minievents":{
-    "active": false,
+    "active": true,
     "template_name": "biexponential",
     "event_time": 100.0,
     "median_window": 1000.0,
