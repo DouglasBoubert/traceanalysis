@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 # Identify minievents
 class MiniEventHandler:
-    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=100000,event_threshold = {'current_threshold':5.0,'charge_threshold':2.0,'significance_threshold':2.0,'rchi2_threshold':1.25}):
+    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=100000,event_threshold = {'current_threshold':5.0,'charge_threshold':2.0,'significance_threshold':2.0,'rchi2_threshold':1.25},print_bool = False):
         # Initial sorting of data
         self.data = copy.copy(trace)
         self.dt = stf.get_sampling_interval()
@@ -34,7 +34,7 @@ class MiniEventHandler:
         self.data_list=[self.data]
         self.min_peak_current = min_peak_current
         self.event_threshold = event_threshold
-        self.print_bool = True
+        self.print_bool = print_bool
         self.template_name = template_name
         self._template, self._template_peak, self._template_area, self._template_params_names, self._template_params_ranges, self._template_params_defaults = utilities.obtain_template(TEMPLATE_NAME=self.template_name)
 
@@ -117,7 +117,8 @@ class MiniEventHandler:
             _suggested_peaks, _peaks_props  = signal.find_peaks(-_data,prominence=NOISE*1.5/_savgol_factor,height = self.min_peak_current/_savgol_factor,width=2)
             #print(_suggested_peaks,NOISE)
             if len(_suggested_peaks) == 0:
-            	print("Found no peaks",_first_peak-_left_extension,_last_peak+_right_extension)
+            	if print_bool:
+            		print("Found no peaks",_first_peak-_left_extension,_last_peak+_right_extension)
                 self.score[-10+_mean_start_index:10+_mean_start_index] = 0.0
                 return False
             #print('here')
