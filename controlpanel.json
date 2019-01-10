@@ -14,7 +14,7 @@
     "median_window": 0.1
   },
   "minievents":{
-    "active": true,
+    "active": false,
     "template_name": "biexponential",
     "event_time": 100.0,
     "median_window": 1000.0,
@@ -27,7 +27,7 @@
       "current_threshold": 5.0,
       "charge_threshold": 2.0,
       "significance_threshold": 2.0,
-      "rchi2_threshold": 0.85
+      "rchi2_threshold": 1.2
     }
   },
   "utilities":{

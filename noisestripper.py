@@ -15,7 +15,7 @@ import time
 class NoiseStripper:
     # Class that takes in data and removes significant spikes.
     # Also removes median.
-    def __init__(self, trace, data_prob_bound=0.5, median_window=1.0, median_spike_window = 100., freq_bound=5.0, min_freq=20.0, notch_band=1.0):
+    def __init__(self, trace, data_prob_bound=0.1, median_window=1.0, median_spike_window = 100., freq_bound=5.0, min_freq=20.0, notch_band=1.0):
         # Initial sorting of data
         self.data = copy.copy(trace)
         self.dt = utilities.dt()
@@ -104,6 +104,7 @@ class NoiseStripper:
     def _remove_spikes(self):
         # Remove the identified spikes
         _data_squeaky_clean = copy.copy(self.data_clean)
+        print("There are",len(self.spikes),"spikes")
         for _freq in self.spikes:
             _data_squeaky_clean = self._implement_notch_filter(self.dt,band=self.notch_band,freq=_freq,order =2.,filter_type='butter',data=_data_squeaky_clean)
         self.data_squeaky_clean = _data_squeaky_clean

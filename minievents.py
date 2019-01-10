@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 # Identify minievents
 class MiniEventHandler:
-    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=10,event_threshold = {'current_threshold':5.0,'charge_threshold':2.0,'significance_threshold':2.0,'rchi2_threshold':0.85}):
+    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=100000,event_threshold = {'current_threshold':5.0,'charge_threshold':2.0,'significance_threshold':2.0,'rchi2_threshold':1.25}):
         # Initial sorting of data
         self.data = copy.copy(trace)
         self.dt = stf.get_sampling_interval()
@@ -94,7 +94,7 @@ class MiniEventHandler:
         NOISE = self.noise_std[_mean_start_index]
         MEDIAN = self.noise_med[_mean_start_index]
         _left_extension = _n_points
-        _right_extension = int(2.0*_n_points)
+        _right_extension = int(3.0*_n_points)
 
         # Are there multiple significant peaks?
         _peaks_bool = True
@@ -108,21 +108,23 @@ class MiniEventHandler:
 
         while _peaks_bool:
             _score = self.score[_first_peak-_left_extension:_last_peak+_right_extension]
-            _data = savgol_filter(self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension],5, 1)
+            _data = savgol_filter(self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension],15,3)
+            _savgol_factor = 1.0
             _time = self.t[_first_peak-_left_extension:_last_peak+_right_extension]
             _peaks = []
             _peaks_heights = []
             #print('here')
-            _suggested_peaks, _peaks_props  = signal.find_peaks(-_data,prominence=NOISE*2,height = self.min_peak_current+NOISE,width=2)
+            _suggested_peaks, _peaks_props  = signal.find_peaks(-_data,prominence=NOISE*1.5/_savgol_factor,height = self.min_peak_current/_savgol_factor,width=2)
             #print(_suggested_peaks,NOISE)
             if len(_suggested_peaks) == 0:
+            	print("Found no peaks",_first_peak-_left_extension,_last_peak+_right_extension)
                 self.score[-10+_mean_start_index:10+_mean_start_index] = 0.0
                 return False
             #print('here')
             for _peak_idx,_peak_height in zip(_suggested_peaks,_peaks_props['peak_heights']):
                 _mad_idx = int((_time[_peak_idx]-_default_peak_time)/self.dt)
                 _max_score = self.score[_mad_idx]
-                if _max_score>0.5 and _peak_height > 10.0:
+                if _max_score>0.5 and _peak_height > self.min_peak_current:
                     _peaks.append(_peak_idx)
                     _peaks_heights.append(-_peak_height)
             #print(_peaks)
@@ -139,7 +141,7 @@ class MiniEventHandler:
         
         # Pull out time and data information
         _score = self.score[_first_peak-_left_extension:_last_peak+_right_extension]
-        _data = savgol_filter(self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension],5, 1)
+        _data = self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension]
         _time = self.t[_first_peak-_left_extension:_last_peak+_right_extension]
 
         # Gather useful quantities
