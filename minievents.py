@@ -108,7 +108,10 @@ class MiniEventHandler:
 
         while _peaks_bool:
             _score = self.score[_first_peak-_left_extension:_last_peak+_right_extension]
-            _data = savgol_filter(self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension],15,3)
+            try:
+            	_data = savgol_filter(self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension],15,3)
+        	except ValueError:
+        		print(_first_peak-_left_extension,_last_peak+_right_extension,self.data_residual.size)
             _savgol_factor = 1.0
             _time = self.t[_first_peak-_left_extension:_last_peak+_right_extension]
             _peaks = []
