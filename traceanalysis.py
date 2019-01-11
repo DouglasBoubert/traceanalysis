@@ -78,6 +78,11 @@ class TraceAnalysis:
 
         # Identify and fit mini events
         if self.control['minievents']['active']:
+            # It is possible to get to here and have no properly defined mask.
+            if self.mask.size == 0:
+                _default_start_end_mask = self.control['minievents']['default_start_end_mask']
+                _start_end_mask = np.concatenate([np.arange(0,_default_start_end_mask),np.arange(self.data[0].size-_default_start_end_mask,self.data[0].size)])
+                self._mask_update(_start_end_mask)
             MEH = minievents.MiniEventHandler(self.data[-1], mask=self.mask, template_name = self.control['minievents']['template_name'], event_time = self.control['minievents']['event_time'], median_window = self.control['minievents']['median_window'], bayes_bound = self.control['minievents']['bayes_bound'], bayes_weight = self.control['minievents']['bayes_weight'], score_bound = self.control['minievents']['score_bound'], min_peak_current = self.control['minievents']['min_peak_current'], event_number_barrier = self.control['minievents']['event_number_barrier'], event_threshold = self.control['minievents']['event_threshold'])
             MEH.run()
             self.data.append(MEH.data_residual)

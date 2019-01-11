@@ -28,7 +28,8 @@
       "charge_threshold": 2.0,
       "significance_threshold": 2.0,
       "rchi2_threshold": 1.2
-    }
+    },
+    "default_start_end_mask": 500
   },
   "utilities":{
     "biexponential_params_defaults":{
