@@ -109,9 +109,9 @@ class MiniEventHandler:
         while _peaks_bool:
             _score = self.score[_first_peak-_left_extension:_last_peak+_right_extension]
             try:
-            	_data = savgol_filter(self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension],15,3)
-        	except ValueError:
-        		print(_first_peak-_left_extension,_last_peak+_right_extension,self.data_residual.size)
+                _data = signal.savgol_filter(self.data_residual[_first_peak-_left_extension:_last_peak+_right_extension],15,3)
+            except ValueError:
+                print(_first_peak-_left_extension,_last_peak+_right_extension,self.data_residual.size)
             _savgol_factor = 1.0
             _time = self.t[_first_peak-_left_extension:_last_peak+_right_extension]
             _peaks = []
@@ -120,8 +120,8 @@ class MiniEventHandler:
             _suggested_peaks, _peaks_props  = signal.find_peaks(-_data,prominence=NOISE*1.5/_savgol_factor,height = self.min_peak_current/_savgol_factor,width=2)
             #print(_suggested_peaks,NOISE)
             if len(_suggested_peaks) == 0:
-            	if self.print_bool:
-            		print("Found no peaks",_first_peak-_left_extension,_last_peak+_right_extension)
+                if self.print_bool:
+                    print("Found no peaks",_first_peak-_left_extension,_last_peak+_right_extension)
                 self.score[-10+_mean_start_index:10+_mean_start_index] = 0.0
                 return False
             #print('here')
