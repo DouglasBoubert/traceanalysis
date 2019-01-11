@@ -117,7 +117,7 @@ class MiniEventHandler:
             _suggested_peaks, _peaks_props  = signal.find_peaks(-_data,prominence=NOISE*1.5/_savgol_factor,height = self.min_peak_current/_savgol_factor,width=2)
             #print(_suggested_peaks,NOISE)
             if len(_suggested_peaks) == 0:
-            	if print_bool:
+            	if self.print_bool:
             		print("Found no peaks",_first_peak-_left_extension,_last_peak+_right_extension)
                 self.score[-10+_mean_start_index:10+_mean_start_index] = 0.0
                 return False
