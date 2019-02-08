@@ -195,11 +195,10 @@ class MiniEventHandler:
         OFFSET, GRADIENT, EVENT_PARAMS = _res['x'][0], _res['x'][1], _res['x'][2:].reshape((_N_MODEL,_N_PARAMS))
         RCHI2 = np.mean(np.abs(_data-_super_model(_time,_res['x'],len(_peaks)))/NOISE)
         if _res['success'] == False and RCHI2 > 1.5:
-            self.score[_first_peak-_left_extension:_last_peak+_right_extension] = 0.0
             self.quit_bool = False
             print _res
-            #plt.plot(_time,_data)
-            #plt.plot(_time,_super_model(_time,_res['x'],_N_MODEL))
+            plt.plot(_time,_data)
+            plt.plot(_time,_super_model(_time,_res['x'],_N_MODEL))
             return False
 
         # We want to calculate the fourier transform over only a small section. Loop over events
