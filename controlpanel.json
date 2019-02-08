@@ -1,6 +1,6 @@
 {
   "bigevents":{
-    "active": false,
+    "active": true,
     "min_charge": -200, 
     "event_time": 100,
     "median_window": 1000.0,
