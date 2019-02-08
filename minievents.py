@@ -196,7 +196,8 @@ class MiniEventHandler:
         RCHI2 = np.mean(np.abs(_data-_super_model(_time,_res['x'],len(_peaks)))/NOISE)
         if _res['success'] == False or RCHI2 > 1.5:
             #self.quit_bool = True
-            print _res
+            if self.print_bool == True:
+                print _res
             self.score[_first_peak-_left_extension:_last_peak+_right_extension] = 0.0
             #plt.plot(_time,_data)
             #plt.plot(_time,_super_model(_time,_res['x'],_N_MODEL))
