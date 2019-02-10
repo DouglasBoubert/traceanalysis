@@ -145,7 +145,7 @@ class MiniEventHandler:
 
             # Incremement peak loop counter
             _i_peak_loop += 1
-            if _i_peak_loop > 50:
+            if _i_peak_loop > 100:
                 self.score[_first_peak-_left_extension:_last_peak+_right_extension] = 0.0
                 return False
         
