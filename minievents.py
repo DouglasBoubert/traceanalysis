@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 # Identify minievents
 class MiniEventHandler:
-    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=5.0, mask=np.array([]),event_number_barrier=100000,event_threshold = {'current_threshold':5.0,'charge_threshold':2.0,'significance_threshold':2.0,'rchi2_threshold':1.25},print_bool = True):
+    def __init__(self, trace, template_name = 'biexponential', event_time = 100.0, median_window=1000.0, bayes_bound=-0.5, bayes_weight=0.1,score_bound = 1.5, min_peak_current=4.0, mask=np.array([]),event_number_barrier=100000,event_threshold = {'current_threshold':5.0,'charge_threshold':2.0,'significance_threshold':2.0,'rchi2_threshold':1.2},print_bool = True):
         # Initial sorting of data
         self.data = copy.copy(trace)
         self.dt = stf.get_sampling_interval()
@@ -105,7 +105,7 @@ class MiniEventHandler:
         _default_peak_time = self._template_peak(PARAMS=self._template_params_defaults())
         from scipy.signal import savgol_filter
         
-
+        _i_peak_loop = 0
         while _peaks_bool:
             _score = self.score[_first_peak-_left_extension:_last_peak+_right_extension]
             try:
@@ -142,6 +142,12 @@ class MiniEventHandler:
             _first_peak = _first_peak+min(_peaks)-_left_extension
             _last_peak = _first_peak+max(_peaks)-_left_extension
             _previous_peaks = _peaks
+
+            # Incremement peak loop counter
+            _i_peak_loop += 1
+            if _i_peak_loop > 50:
+                self.score[_first_peak-_left_extension:_last_peak+_right_extension] = 0.0
+                return False
         
         # Pull out time and data information
         _score = self.score[_first_peak-_left_extension:_last_peak+_right_extension]
