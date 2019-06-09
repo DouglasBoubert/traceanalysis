@@ -164,23 +164,37 @@ class MiniEventHandler:
         def _mod_template(T,X):
             START_T, SCALE, _PARAMS  = X[0], X[1], X[2:]
             try:
-                return SCALE * self._template(T-START_T,_PARAMS)
+                _TEMPLATE, _TEMPLATE_GRADIENT = self._template(T-START_T,_PARAMS,RETURN_GRADIENT = True)
+                _MODEL = SCALE*_TEMPLATE
+                _MODEL_GRADIENT = np.zeros((len(X),T.size))
+                _MODEL_GRADIENT[0] = -SCALE*_TEMPLATE_GRADIENT[0]
+                _MODEL_GRADIENT[1] = _TEMPLATE
+                _MODEL_GRADIENT[2:] = SCALE*_TEMPLATE_GRADIENT[1:]
+                return _MODEL, _MODEL_GRADIENT
             except RuntimeError:
                 print _PARAMS
 
-        def _super_model(T,X,_NMODEL):
-            OFFSET, GRADIENT, EVENT_PARAMS = X[0], X[1], X[2:].reshape((_NMODEL,_N_PARAMS))
-            _model = OFFSET + GRADIENT*(T-T[_n_points]) # The base-line is centred on the first event
-            for _model_index in range(_NMODEL):
-                _model += _mod_template(T,EVENT_PARAMS[_model_index])
-            return _model
+        def _super_model(T,X,_N_MODEL):
+            OFFSET, GRADIENT, EVENT_PARAMS = X[0], X[1], X[2:].reshape((_N_MODEL,_N_PARAMS))
+            _SUPER_MODEL_GRADIENT = np.zeros((len(X),T.size))
+            _SUPER_MODEL = OFFSET + GRADIENT*(T-T[_n_points]) # The base-line is centred on the first event
+            _SUPER_MODEL_GRADIENT[0] = 1.0
+            _SUPER_MODEL_GRADIENT[1] = T-T[_n_points]
+            for _model_index in range(_N_MODEL):
+                _MODEL, _MODEL_GRADIENT = _mod_template(T,EVENT_PARAMS[_model_index])
+                _SUPER_MODEL += _MODEL
+                _SUPER_MODEL_GRADIENT[2+_model_index*_N_PARAMS:2+(_model_index+1)*_N_PARAMS] = _MODEL_GRADIENT
+            return _SUPER_MODEL, _SUPER_MODEL_GRADIENT
 
 
-        def _target(X,_NMODEL=1):
+        def _target(X,_N_MODEL=1):
         #def _target(X,ARGS):
         #    _NMODEL=ARGS[0]
-            _model = _super_model(_time,X,_NMODEL)
-            return (-(-0.5*(_data-_model)**2.0/NOISE**2.0)*_weights).sum()
+            _model,_model_gradient = _super_model(_time,X,_N_MODEL)
+            lngrad_base = (-(_model-_data)/NOISE**2.0)*_weights
+            lnlike = 0.5*np.dot((_model-_data),lngrad_base)
+            lngrad = np.dot(_model_gradient,lngrad_base)
+            return -lnlike,-lngrad
 
         # Set up initial location and bounds
         #_X0 = [MEDIAN,0.0]
@@ -194,12 +208,12 @@ class MiniEventHandler:
             _X0 += [_mean_start_t,-10.0] + self._template_params_defaults()
             _bnds += [(_mean_start_t-_range_start_t[0], _mean_start_t+_range_start_t[1]),(1.5*_h, 0.5*_h)] + self._template_params_ranges()
         _opt = {'gtol':1e-10,'ftol':1e-10,'maxfun':100000}
-        _res = optimize.minimize(_target,_X0,method='L-BFGS-B', tol=1e-10, bounds=_bnds, options=_opt, args=(_N_MODEL))
+        _res = optimize.minimize(_target,_X0,method='L-BFGS-B', tol=1e-10, bounds=_bnds, options=_opt, args=(_N_MODEL),jac=True)
         #_res = optimize.dual_annealing(_target, bounds=_bnds, args=(_N_MODEL,),x0=_X0)
         #print(_res)
         # Pull out quantities of interest and check success
         OFFSET, GRADIENT, EVENT_PARAMS = _res['x'][0], _res['x'][1], _res['x'][2:].reshape((_N_MODEL,_N_PARAMS))
-        RCHI2 = np.mean(np.abs(_data-_super_model(_time,_res['x'],len(_peaks)))/NOISE)
+        RCHI2 = np.mean(np.abs(_data-_super_model(_time,_res['x'],len(_peaks))[0])/NOISE)
         if _res['success'] == False or RCHI2 > 1.5:
             #self.quit_bool = True
             if self.print_bool == True:
@@ -222,7 +236,7 @@ class MiniEventHandler:
 
             # Generate template fit and adjust running totals
             _START_T_offset = START_T%self.dt
-            _fit_template_short = _mod_template(self.t_short+START_T-_START_T_offset,EVENT_PARAMS[_e_index]) # Does not contain offset.
+            _fit_template_short = _mod_template(self.t_short+START_T-_START_T_offset,EVENT_PARAMS[_e_index])[0] # Does not contain offset.
             _f = np.fft.rfftfreq(self.t_short.size,d=self.dt)
             _ft_fit_template_short = utilities.fourier(_fit_template_short,self.dt)*np.exp(-2.0*np.pi*1j*_f*(START_T-_START_T_offset))
             _intermediate_score = np.fft.irfft(_ft_fit_template_short * self.ft_template_short.conjugate(),n=self.t_short.size)

@@ -51,8 +51,8 @@ def rolling(DATA,WINDOW=50,FUNC='MEDIAN',EDGE_METHOD='SHIFTING'):
 
 # Median and interquartile-derived standard deviation
 def sufficient_statistics(DATA):
-	percentiles = np.percentile(DATA,[25,50,75])
-	return percentiles[1], (percentiles[2]-percentiles[0])/1.349
+    percentiles = np.percentile(DATA,[25,50,75])
+    return percentiles[1], (percentiles[2]-percentiles[0])/1.349
 
 # Fourier transform
 def fourier(TARGET,DT):
@@ -60,29 +60,39 @@ def fourier(TARGET,DT):
 
 # Return dt in seconds accounting for the Stimfit unit
 def dt():
-	stf_xunits = stf.get_xunits()
-	stf_dt = stf.get_sampling_interval()
-	if stf_xunits == 's':
-		return stf_dt
-	if stf_xunits == 'ms':
-		return stf_dt*1e-3
-	elif stf_xunits == 'ns':
-		return stf_dt*1e-6
-	else:
-		print 'Cannot interpret the response of stf.get_xunits().'
+    stf_xunits = stf.get_xunits()
+    stf_dt = stf.get_sampling_interval()
+    if stf_xunits == 's':
+        return stf_dt
+    if stf_xunits == 'ms':
+        return stf_dt*1e-3
+    elif stf_xunits == 'ns':
+        return stf_dt*1e-6
+    else:
+        print 'Cannot interpret the response of stf.get_xunits().'
 
 # Splits an array into consecutive blocks
 def consecutive(DATA, STEPSIZE=1):
     return np.split(DATA, np.where(np.diff(DATA) != STEPSIZE)[0]+1)
 
 # Biexponential template and related functions
-def _biexponential(T,PARAMS=(1.0,1.0)):
+def _biexponential(T,PARAMS=(1.0,1.0),RETURN_GRADIENT=False):
     RISE, DECAY = PARAMS
     NORM = 1/((DECAY/(RISE+DECAY))*(RISE/(RISE+DECAY))**(RISE/DECAY))
-    retarray = np.zeros(T.shape[0])
+    
     postime = T>0.
+    retarray = np.zeros(T.shape[0])
     retarray[postime] = NORM*(1.0-np.exp(-T[postime]/RISE))*np.exp(-T[postime]/DECAY)
-    return retarray
+    if RETURN_GRADIENT == False:
+        return retarray
+    else:
+        # Returns db/dt,db/dr,db/dd
+        retgradient = np.zeros((3,T.shape[0]))
+        retgradient[0,postime] = NORM*np.exp(-T[postime]/DECAY)/RISE-(1.0/RISE+1.0/DECAY)*retarray[postime]
+        retgradient[1,postime] = -retarray[postime]*np.log(RISE/(RISE+DECAY))/DECAY-NORM*np.exp(-T[postime]*(1.0/DECAY+1.0/RISE))*T[postime]/RISE**2.0
+        retgradient[2,postime] = (RISE*np.log(RISE/(RISE+DECAY))+T[postime])*retarray[postime]/DECAY**2.0
+        return retarray, retgradient
+       
 
 def _biexponential_peak(PARAMS=(1.0,1.0)):
     RISE, DECAY = PARAMS
